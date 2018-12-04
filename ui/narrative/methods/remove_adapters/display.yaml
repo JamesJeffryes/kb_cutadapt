@@ -1,7 +1,7 @@
 #
 # define display information
 #
-name: Cutadapt - v1.14
+name: Cutadapt - v1.18
 
 tooltip: |
     Removes 3' or 5' adapters from reads using cutadapt

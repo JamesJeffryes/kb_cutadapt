@@ -1,3 +1,9 @@
+### Verson 1.0.7
+__Changes__
+- fix to build from sdkbase2 image
+- updated cutadapt version to 1.18
+- handle paired end reads properly, e.g., by including both -A and -a options
+
 ### Verson 1.0.6
 __Changes__
 - changed citation for PLOS format

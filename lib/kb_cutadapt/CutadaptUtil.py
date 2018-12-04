@@ -74,10 +74,16 @@ class CutadaptRunner:
         if self.three_prime:
             cmd.append('-a')
             cmd.append(self.three_prime)
+            if self.interleaved:
+                cmd.append('-A')
+                cmd.append(self.three_prime)
 
         if self.five_prime:
             cmd.append('-g')
             cmd.append(self.five_prime)
+            if self.interleaved:
+                cmd.append('-G')
+                cmd.append(self.five_prime)
 
         if self.err_tolerance:
             cmd.append('--error-rate=' + str(self.err_tolerance))
