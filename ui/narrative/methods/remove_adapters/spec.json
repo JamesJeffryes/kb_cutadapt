@@ -1,7 +1,7 @@
 {
-    "ver": "1.0.5",
+    "ver": "1.0.7",
     "contact": "http://kbase.us/contact-us/",
-    "authors": [ "msneddon", "dylan", "qzhang" ],
+    "authors": [ "msneddon", "dylan", "qzhang", "jmc" ],
     "visible" : true,
     "categories": ["active","reads"],
 
