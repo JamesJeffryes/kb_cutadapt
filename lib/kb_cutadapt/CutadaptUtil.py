@@ -1,11 +1,8 @@
 import os
 import subprocess
+from pprint import pprint, pformat
 
-from pprint import pprint,pformat
-
-from ReadsUtils.ReadsUtilsClient import ReadsUtils
-#from KBaseReport.KBaseReportClient import KBaseReport
-
+from installed_clients.ReadsUtilsClient import ReadsUtils
 
 
 def log(message):
@@ -13,9 +10,7 @@ def log(message):
     print(message)
 
 
-
 class CutadaptRunner:
-
     CUTADAPT = 'cutadapt'
 
     def __init__(self, scratch):
@@ -33,13 +28,11 @@ class CutadaptRunner:
         self.min_read_length = None
         self.discard_untrimmed = None
 
-
     def set_input_file(self, filename):
         self.input_filename = filename
 
     def set_output_file(self, filename):
         self.output_filename = filename
-
 
     def set_three_prime_option(self, sequence, anchored):
         if anchored == 1:
@@ -50,7 +43,6 @@ class CutadaptRunner:
         if anchored == 1:
             sequence = '^' + sequence
         self.five_prime = sequence
-
 
     def set_error_tolerance(self, tolerance):
         self.err_tolerance = float(tolerance)
@@ -97,7 +89,6 @@ class CutadaptRunner:
         if int(self.discard_untrimmed) == 1:
             cmd.append('--discard-untrimmed')
 
-
     def run(self):
         cmd = [self.CUTADAPT]
 
@@ -122,7 +113,7 @@ class CutadaptRunner:
 
         report = ''
         while True:
-            line = p.stdout.readline()
+            line = p.stdout.readline().decode()
             if not line:
                 break
             report += line
@@ -145,9 +136,8 @@ class CutadaptUtil:
         self.scratch = config['scratch']
         self.callbackURL = config['SDK_CALLBACK_URL']
 
-
     def remove_adapters(self, params):
-        print ("\nPARAMS:\n"+pformat(params)+"\n")  # DEBUG
+        print(("\nPARAMS:\n" + pformat(params) + "\n"))  # DEBUG
 
         self.validate_remove_adapters_parameters(params)
 
@@ -188,30 +178,29 @@ class CutadaptUtil:
                     raise ValueError('"three_prime.anchored_3P" must be either 0 or 1')
 
         if not adapter_found:
-            raise ValueError ("Must configure at least one of 5' or 3' adapter")
+            raise ValueError("Must configure at least one of 5' or 3' adapter")
 
         # TODO: validate values of error_tolerance and min_overlap_length
-
 
     def _stage_input_file(self, cutadapt_runner, ref, reads_type):
 
         ru = ReadsUtils(self.callbackURL)
         if reads_type == 'KBaseFile.PairedEndLibrary' or 'KBaseAssembly.PairedEndLibrary':
             input_file_info = ru.download_reads({
-                    'read_libraries': [ref],
-                    'interleaved': 'true'
-                    })['files'][ref]
+                'read_libraries': [ref],
+                'interleaved': 'true'
+            })['files'][ref]
         elif reads_type == 'KBaseFile.SingleEndLibrary' or 'KBaseAssembly.SingleEndLibrary':
             input_file_info = ru.download_reads({
-                    'read_libraries': [ref]
-                    })['files'][ref]
+                'read_libraries': [ref]
+            })['files'][ref]
         else:
-            raise ValueError ("Can't download_reads() for object type: '"+str(reads_type)+"'")
+            raise ValueError("Can't download_reads() for object type: '" + str(reads_type) + "'")
         input_file_info['input_ref'] = ref
         file_location = input_file_info['files']['fwd']
 
         # DEBUG
-        #with open (file_location, 'r', 0)  as fasta_file:
+        # with open (file_location, 'r', 0)  as fasta_file:
         #    for line in fasta_file.readlines():
         #        print ("LINE: '"+line+"'\n")
 
@@ -221,7 +210,6 @@ class CutadaptUtil:
         cutadapt_runner.set_interleaved(interleaved)
         cutadapt_runner.set_input_file(file_location)
         return input_file_info
-
 
     def _build_run(self, cutadapt_runner, params):
         if 'five_prime' in params:
@@ -252,7 +240,6 @@ class CutadaptUtil:
         if 'discard_untrimmed' in params:
             cutadapt_runner.set_discard_untrimmed(params['discard_untrimmed'])
 
-
     def _package_result(self, output_file, output_name, ws_name_or_id, data_info, report):
         upload_params = {
             'fwd_file': output_file,
@@ -273,7 +260,8 @@ class CutadaptUtil:
             'insert_size_std_dev'
         ]
 
-        if 'input_ref' in data_info and data_info['input_ref'] != None and data_info['sequencing_tech']:
+        if 'input_ref' in data_info and data_info['input_ref'] != None and data_info[
+            'sequencing_tech']:
             upload_params['source_reads_ref'] = data_info['input_ref']
         else:
             for f in fields:
@@ -288,7 +276,6 @@ class CutadaptUtil:
                 upload_params['sequencing_tech'] = 'unknown'
             if not upload_params['sequencing_tech']:
                 upload_params['sequencing_tech'] = 'unknown'
-
 
         if data_info['files']['type'] == 'interleaved':
             upload_params['interleaved'] = 1

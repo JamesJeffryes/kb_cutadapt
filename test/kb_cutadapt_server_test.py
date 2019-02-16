@@ -1,29 +1,18 @@
 # -*- coding: utf-8 -*-
-import unittest
 import os  # noqa: F401
-import json  # noqa: F401
 import time
-import requests
-import shutil
-requests.packages.urllib3.disable_warnings()
-
+import unittest
+from configparser import ConfigParser  # py3
 from os import environ
-try:
-    from ConfigParser import ConfigParser  # py2
-except:
-    from configparser import ConfigParser  # py3
-
 from pprint import pprint  # noqa: F401
 
-from biokbase.workspace.client import Workspace as workspaceService
-from biokbase.AbstractHandle.Client import AbstractHandle as HandleService
-from requests_toolbelt import MultipartEncoder
+import requests
 
+from installed_clients.AbstractHandleClient import AbstractHandle as HandleService
+from installed_clients.WorkspaceClient import Workspace as workspaceService
+from kb_cutadapt.authclient import KBaseAuth as _KBaseAuth
 from kb_cutadapt.kb_cutadaptImpl import kb_cutadapt
 from kb_cutadapt.kb_cutadaptServer import MethodContext
-
-from ReadsUtils.ReadsUtilsClient import ReadsUtils
-from kb_cutadapt.authclient import KBaseAuth as _KBaseAuth
 
 
 class kb_cutadaptTest(unittest.TestCase):
@@ -38,7 +27,7 @@ class kb_cutadaptTest(unittest.TestCase):
         for nameval in config.items('kb_cutadapt'):
             cls.cfg[nameval[0]] = nameval[1]
         authServiceUrl = cls.cfg.get('auth-service-url',
-                "https://kbase.us/services/authorization/Sessions/Login")
+                                     "https://kbase.us/services/authorization/Sessions/Login")
         auth_client = _KBaseAuth(authServiceUrl)
         user_id = auth_client.get_user(token)
         # WARNING: don't call any logging methods on the context object,
@@ -92,7 +81,7 @@ class kb_cutadaptTest(unittest.TestCase):
             print('Test workspace was deleted')
         if hasattr(cls, 'shock_ids'):
             for shock_id in cls.shock_ids:
-                print('Deleting SHOCK node: '+str(shock_id))
+                print('Deleting SHOCK node: ' + str(shock_id))
                 cls.delete_shock_node(shock_id)
 
     def getWsClient(self):
@@ -112,7 +101,6 @@ class kb_cutadaptTest(unittest.TestCase):
 
     def getContext(self):
         return self.__class__.ctx
-
 
     @classmethod
     def upload_file_to_shock(cls, file_path):
@@ -170,58 +158,58 @@ class kb_cutadaptTest(unittest.TestCase):
 
         # 1) upload files to shock
         token = self.ctx['token']
-        forward_shock_file = self.upload_file_to_shock('data/'+read_lib_basename+'.fwd.fq')
-        #pprint(forward_shock_file)
+        forward_shock_file = self.upload_file_to_shock('data/' + read_lib_basename + '.fwd.fq')
+        # pprint(forward_shock_file)
 
         # 2) create handle
         hs = HandleService(url=self.handleURL, token=token)
         forward_handle = hs.persist_handle({
-                                        'id' : forward_shock_file['id'], 
-                                        'type' : 'shock',
-                                        'url' : self.shockURL,
-                                        'file_name': forward_shock_file['file']['name'],
-                                        'remote_md5': forward_shock_file['file']['checksum']['md5']})
+            'id': forward_shock_file['id'],
+            'type': 'shock',
+            'url': self.shockURL,
+            'file_name': forward_shock_file['file']['name'],
+            'remote_md5': forward_shock_file['file']['checksum']['md5']})
 
         # 3) save to WS
         single_end_library = {
             'lib': {
                 'file': {
-                    'hid':forward_handle,
+                    'hid': forward_handle,
                     'file_name': forward_shock_file['file']['name'],
                     'id': forward_shock_file['id'],
                     'url': self.shockURL,
-                    'type':'shock',
-                    'remote_md5':forward_shock_file['file']['checksum']['md5']
+                    'type': 'shock',
+                    'remote_md5': forward_shock_file['file']['checksum']['md5']
                 },
-                'encoding':'UTF8',
-                'type':'fastq',
-                'size':forward_shock_file['file']['size']
+                'encoding': 'UTF8',
+                'type': 'fastq',
+                'size': forward_shock_file['file']['size']
             },
-            'sequencing_tech':'artificial reads'
+            'sequencing_tech': 'artificial reads'
         }
 
         new_obj_info = self.wsClient.save_objects({
-                        'workspace':self.getWsName(),
-                        'objects':[
-                            {
-                                'type':'KBaseFile.SingleEndLibrary',
-                                'data':single_end_library,
-                                'name':'test-'+str(lib_i)+'.se.reads',
-                                'meta':{},
-                                'provenance':[
-                                    {
-                                        'service':'kb_trimmomatic',
-                                        'method':'test_runTrimmomatic'
-                                    }
-                                ]
-                            }]
-                        })[0]
+            'workspace': self.getWsName(),
+            'objects': [
+                {
+                    'type': 'KBaseFile.SingleEndLibrary',
+                    'data': single_end_library,
+                    'name': 'test-' + str(lib_i) + '.se.reads',
+                    'meta': {},
+                    'provenance': [
+                        {
+                            'service': 'kb_trimmomatic',
+                            'method': 'test_runTrimmomatic'
+                        }
+                    ]
+                }]
+        })[0]
 
         # store it
         if not hasattr(self.__class__, 'singleEndLibInfo_list'):
             self.__class__.singleEndLibInfo_list = []
             self.__class__.singleEndLibName_list = []
-        for i in range(lib_i+1):
+        for i in range(lib_i + 1):
             try:
                 assigned = self.__class__.singleEndLibInfo_list[i]
             except:
@@ -248,82 +236,82 @@ class kb_cutadaptTest(unittest.TestCase):
 
         # 1) upload files to shock
         token = self.ctx['token']
-        forward_shock_file = self.upload_file_to_shock('data/'+read_lib_basename+'.fwd.fq')
-        reverse_shock_file = self.upload_file_to_shock('data/'+read_lib_basename+'.rev.fq')
-        #pprint(forward_shock_file)
-        #pprint(reverse_shock_file)
+        forward_shock_file = self.upload_file_to_shock('data/' + read_lib_basename + '.fwd.fq')
+        reverse_shock_file = self.upload_file_to_shock('data/' + read_lib_basename + '.rev.fq')
+        # pprint(forward_shock_file)
+        # pprint(reverse_shock_file)
 
         # 2) create handle
         hs = HandleService(url=self.handleURL, token=token)
         forward_handle = hs.persist_handle({
-                                        'id' : forward_shock_file['id'], 
-                                        'type' : 'shock',
-                                        'url' : self.shockURL,
-                                        'file_name': forward_shock_file['file']['name'],
-                                        'remote_md5': forward_shock_file['file']['checksum']['md5']})
+            'id': forward_shock_file['id'],
+            'type': 'shock',
+            'url': self.shockURL,
+            'file_name': forward_shock_file['file']['name'],
+            'remote_md5': forward_shock_file['file']['checksum']['md5']})
 
         reverse_handle = hs.persist_handle({
-                                        'id' : reverse_shock_file['id'], 
-                                        'type' : 'shock',
-                                        'url' : self.shockURL,
-                                        'file_name': reverse_shock_file['file']['name'],
-                                        'remote_md5': reverse_shock_file['file']['checksum']['md5']})
+            'id': reverse_shock_file['id'],
+            'type': 'shock',
+            'url': self.shockURL,
+            'file_name': reverse_shock_file['file']['name'],
+            'remote_md5': reverse_shock_file['file']['checksum']['md5']})
 
         # 3) save to WS
         paired_end_library = {
             'lib1': {
                 'file': {
-                    'hid':forward_handle,
+                    'hid': forward_handle,
                     'file_name': forward_shock_file['file']['name'],
                     'id': forward_shock_file['id'],
                     'url': self.shockURL,
-                    'type':'shock',
-                    'remote_md5':forward_shock_file['file']['checksum']['md5']
+                    'type': 'shock',
+                    'remote_md5': forward_shock_file['file']['checksum']['md5']
                 },
-                'encoding':'UTF8',
-                'type':'fastq',
-                'size':forward_shock_file['file']['size']
+                'encoding': 'UTF8',
+                'type': 'fastq',
+                'size': forward_shock_file['file']['size']
             },
             'lib2': {
                 'file': {
-                    'hid':reverse_handle,
+                    'hid': reverse_handle,
                     'file_name': reverse_shock_file['file']['name'],
                     'id': reverse_shock_file['id'],
                     'url': self.shockURL,
-                    'type':'shock',
-                    'remote_md5':reverse_shock_file['file']['checksum']['md5']
+                    'type': 'shock',
+                    'remote_md5': reverse_shock_file['file']['checksum']['md5']
                 },
-                'encoding':'UTF8',
-                'type':'fastq',
-                'size':reverse_shock_file['file']['size']
+                'encoding': 'UTF8',
+                'type': 'fastq',
+                'size': reverse_shock_file['file']['size']
 
             },
-            'interleaved':0,
-            'sequencing_tech':'artificial reads'
+            'interleaved': 0,
+            'sequencing_tech': 'artificial reads'
         }
 
         new_obj_info = self.wsClient.save_objects({
-                        'workspace':self.getWsName(),
-                        'objects':[
-                            {
-                                'type':'KBaseFile.PairedEndLibrary',
-                                'data':paired_end_library,
-                                'name':'test-'+str(lib_i)+'.pe.reads',
-                                'meta':{},
-                                'provenance':[
-                                    {
-                                        'service':'kb_trimmomatic',
-                                        'method':'test_runTrimmomatic'
-                                    }
-                                ]
-                            }]
-                        })[0]
+            'workspace': self.getWsName(),
+            'objects': [
+                {
+                    'type': 'KBaseFile.PairedEndLibrary',
+                    'data': paired_end_library,
+                    'name': 'test-' + str(lib_i) + '.pe.reads',
+                    'meta': {},
+                    'provenance': [
+                        {
+                            'service': 'kb_trimmomatic',
+                            'method': 'test_runTrimmomatic'
+                        }
+                    ]
+                }]
+        })[0]
 
         # store it
         if not hasattr(self.__class__, 'pairedEndLibInfo_list'):
             self.__class__.pairedEndLibInfo_list = []
             self.__class__.pairedEndLibName_list = []
-        for i in range(lib_i+1):
+        for i in range(lib_i + 1):
             try:
                 assigned = self.__class__.pairedEndLibInfo_list[i]
             except:
@@ -333,7 +321,6 @@ class kb_cutadaptTest(unittest.TestCase):
         self.__class__.pairedEndLibInfo_list[lib_i] = new_obj_info
         self.__class__.pairedEndLibName_list[lib_i] = read_lib_basename
         return new_obj_info
-
 
     # call this method to get the WS object info of a Single End Library Set (will
     # upload the example data if this is the first time the method is called during tests)
@@ -351,46 +338,43 @@ class kb_cutadaptTest(unittest.TestCase):
 
         # build items and save each PairedEndLib
         items = []
-        for lib_i,read_lib_basename in enumerate (read_libs_basename_list):
-            label    = read_lib_basename
-            lib_info = self.getSingleEndLibInfo (read_lib_basename, lib_i)
-            lib_ref  = str(lib_info[6])+'/'+str(lib_info[0])
-            print ("LIB_REF["+str(lib_i)+"]: "+lib_ref+" "+read_lib_basename)  # DEBUG
+        for lib_i, read_lib_basename in enumerate(read_libs_basename_list):
+            label = read_lib_basename
+            lib_info = self.getSingleEndLibInfo(read_lib_basename, lib_i)
+            lib_ref = str(lib_info[6]) + '/' + str(lib_info[0])
+            print(f"LIB_REF[{lib_i}]: {lib_ref} {read_lib_basename}")  # DEBUG
 
             items.append({'ref': lib_ref,
                           'label': label
-                          #'data_attachment': ,
-                          #'info':
-                         })
+                          })
 
         # save readsset
         desc = 'test ReadsSet'
-        readsSet_obj = { 'description': desc,
-                         'items': items
-                       }
+        readsSet_obj = {'description': desc,
+                        'items': items
+                        }
         name = 'TEST_READSET'
 
         new_obj_info = self.wsClient.save_objects({
-                        'workspace':self.getWsName(),
-                        'objects':[
-                            {
-                                'type':'KBaseSets.ReadsSet',
-                                'data':readsSet_obj,
-                                'name':name,
-                                'meta':{},
-                                'provenance':[
-                                    {
-                                        'service':'kb_trimmomatic',
-                                        'method':'test_runTrimmomatic'
-                                    }
-                                ]
-                            }]
-                        })[0]
+            'workspace': self.getWsName(),
+            'objects': [
+                {
+                    'type': 'KBaseSets.ReadsSet',
+                    'data': readsSet_obj,
+                    'name': name,
+                    'meta': {},
+                    'provenance': [
+                        {
+                            'service': 'kb_trimmomatic',
+                            'method': 'test_runTrimmomatic'
+                        }
+                    ]
+                }]
+        })[0]
 
         # store it
         self.__class__.singleEndLib_SetInfo = new_obj_info
         return new_obj_info
-
 
     # call this method to get the WS object info of a Paired End Library Set (will
     # upload the example data if this is the first time the method is called during tests)
@@ -398,7 +382,7 @@ class kb_cutadaptTest(unittest.TestCase):
         if hasattr(self.__class__, 'pairedEndLib_SetInfo'):
             try:
                 info = self.__class__.pairedEndLib_SetInfo
-                if info != None:
+                if info is not None:
                     if refresh:
                         self.__class__.pairedEndLib_SetInfo[lib_i] = None
                     else:
@@ -408,46 +392,43 @@ class kb_cutadaptTest(unittest.TestCase):
 
         # build items and save each PairedEndLib
         items = []
-        for lib_i,read_lib_basename in enumerate (read_libs_basename_list):
-            label    = read_lib_basename
-            lib_info = self.getPairedEndLibInfo (read_lib_basename, lib_i)
-            lib_ref  = str(lib_info[6])+'/'+str(lib_info[0])
-            print ("LIB_REF["+str(lib_i)+"]: "+lib_ref+" "+read_lib_basename)  # DEBUG
+        for lib_i, read_lib_basename in enumerate(read_libs_basename_list):
+            label = read_lib_basename
+            lib_info = self.getPairedEndLibInfo(read_lib_basename, lib_i)
+            lib_ref = str(lib_info[6]) + '/' + str(lib_info[0])
+            print("LIB_REF[{lib_i}]: {lib_ref} {read_lib_basename}")  # DEBUG
 
             items.append({'ref': lib_ref,
                           'label': label
-                          #'data_attachment': ,
-                          #'info':
-                         })
+                          })
 
         # save readsset
         desc = 'test ReadsSet'
-        readsSet_obj = { 'description': desc,
-                         'items': items
-                       }
+        readsSet_obj = {'description': desc,
+                        'items': items
+                        }
         name = 'TEST_READSET'
 
         new_obj_info = self.wsClient.save_objects({
-                        'workspace':self.getWsName(),
-                        'objects':[
-                            {
-                                'type':'KBaseSets.ReadsSet',
-                                'data':readsSet_obj,
-                                'name':name,
-                                'meta':{},
-                                'provenance':[
-                                    {
-                                        'service':'kb_trimmomatic',
-                                        'method':'test_runTrimmomatic'
-                                    }
-                                ]
-                            }]
-                        })[0]
+            'workspace': self.getWsName(),
+            'objects': [
+                {
+                    'type': 'KBaseSets.ReadsSet',
+                    'data': readsSet_obj,
+                    'name': name,
+                    'meta': {},
+                    'provenance': [
+                        {
+                            'service': 'kb_trimmomatic',
+                            'method': 'test_runTrimmomatic'
+                        }
+                    ]
+                }]
+        })[0]
 
         # store it
         self.__class__.pairedEndLib_SetInfo = new_obj_info
         return new_obj_info
-
 
     ##############
     # UNIT TESTS #
@@ -455,21 +436,20 @@ class kb_cutadaptTest(unittest.TestCase):
 
     # NOTE: According to Python unittest naming rules test method names should start from 'test'. # noqa
 
-
     ### TEST 1: run Cutadapt against just one single end library
     #
     # Uncomment to skip this test
     # @unittest.skip("skipped test_basic_options_SE_Lib")
     def test_basic_options_SE_Lib(self):
 
-        print ("\n\nRUNNING: test_basic_options_SE_Lib()")
-        print ("====================================\n\n")
+        print("\n\nRUNNING: test_basic_options_SE_Lib()")
+        print("====================================\n\n")
 
         input_libs = ['cutadapt_1']
         output_name = 'trim5p.SELib'
 
         se_lib_info = self.getSingleEndLibInfo(input_libs[0])
-        se_lib_ref = str(se_lib_info[6])+'/'+str(se_lib_info[0])
+        se_lib_ref = str(se_lib_info[6]) + '/' + str(se_lib_info[0])
 
         p1 = {
             'input_reads': se_lib_ref,
@@ -489,12 +469,12 @@ class kb_cutadaptTest(unittest.TestCase):
 
         # check the output
         single_output_name = output_name
-        info_list = self.wsClient.get_object_info([{'ref':se_lib_info[7] + '/' + single_output_name}], 1)
-        self.assertEqual(len(info_list),1)
+        info_list = self.wsClient.get_object_info(
+            [{'ref': se_lib_info[7] + '/' + single_output_name}], 1)
+        self.assertEqual(len(info_list), 1)
         output_reads_info = info_list[0]
-        self.assertEqual(output_reads_info[1],single_output_name)
-        self.assertEqual(output_reads_info[2].split('-')[0],'KBaseFile.SingleEndLibrary')
-
+        self.assertEqual(output_reads_info[1], single_output_name)
+        self.assertEqual(output_reads_info[2].split('-')[0], 'KBaseFile.SingleEndLibrary')
 
     ### TEST 2: run Cutadapt against just one paired end library
     #
@@ -502,14 +482,14 @@ class kb_cutadaptTest(unittest.TestCase):
     # @unittest.skip("skipped test_basic_options_PE_Lib")
     def test_basic_options_PE_Lib(self):
 
-        print ("\n\nRUNNING: test_basic_options_PE_Lib()")
-        print ("====================================\n\n")
+        print("\n\nRUNNING: test_basic_options_PE_Lib()")
+        print("====================================\n\n")
 
         input_libs = ['cutadapt_1']
         output_name = 'trim5p.PELib'
 
         pe_lib_info = self.getPairedEndLibInfo(input_libs[0])
-        pe_lib_ref = str(pe_lib_info[6])+'/'+str(pe_lib_info[0])
+        pe_lib_ref = str(pe_lib_info[6]) + '/' + str(pe_lib_info[0])
 
         p2 = {
             'input_reads': pe_lib_ref,
@@ -529,12 +509,12 @@ class kb_cutadaptTest(unittest.TestCase):
 
         # check the output
         paired_output_name = output_name
-        info_list = self.wsClient.get_object_info([{'ref':pe_lib_info[7] + '/' + paired_output_name}], 1)
-        self.assertEqual(len(info_list),1)
+        info_list = self.wsClient.get_object_info(
+            [{'ref': pe_lib_info[7] + '/' + paired_output_name}], 1)
+        self.assertEqual(len(info_list), 1)
         output_reads_info = info_list[0]
-        self.assertEqual(output_reads_info[1],paired_output_name)
-        self.assertEqual(output_reads_info[2].split('-')[0],'KBaseFile.PairedEndLibrary')
-
+        self.assertEqual(output_reads_info[1], paired_output_name)
+        self.assertEqual(output_reads_info[2].split('-')[0], 'KBaseFile.PairedEndLibrary')
 
     ### TEST 3: run Cutadapt against single end reads set
     #
@@ -542,14 +522,14 @@ class kb_cutadaptTest(unittest.TestCase):
     # @unittest.skip("skipped test_basic_options_SE_ReadsSet")
     def test_basic_options_SE_ReadsSet(self):
 
-        print ("\n\nRUNNING: test_basic_options_SE_ReadsSet()")
-        print ("=========================================\n\n")
+        print("\n\nRUNNING: test_basic_options_SE_ReadsSet()")
+        print("=========================================\n\n")
 
-        input_libs = ['cutadapt_1','cutadapt_2']
+        input_libs = ['cutadapt_1', 'cutadapt_2']
         output_name = 'trim5p.SERS'
 
         se_lib_set_info = self.getSingleEndLib_SetInfo(input_libs)
-        se_lib_set_ref = str(se_lib_set_info[6])+'/'+str(se_lib_set_info[0])
+        se_lib_set_ref = str(se_lib_set_info[6]) + '/' + str(se_lib_set_info[0])
 
         p3 = {
             'input_reads': se_lib_set_ref,
@@ -569,12 +549,12 @@ class kb_cutadaptTest(unittest.TestCase):
 
         # check the output
         single_output_name = output_name
-        info_list = self.wsClient.get_object_info([{'ref':se_lib_set_info[7] + '/' + single_output_name}], 1)
-        self.assertEqual(len(info_list),1)
+        info_list = self.wsClient.get_object_info(
+            [{'ref': se_lib_set_info[7] + '/' + single_output_name}], 1)
+        self.assertEqual(len(info_list), 1)
         output_reads_info = info_list[0]
-        self.assertEqual(output_reads_info[1],single_output_name)
-        self.assertEqual(output_reads_info[2].split('-')[0],'KBaseSets.ReadsSet')
-
+        self.assertEqual(output_reads_info[1], single_output_name)
+        self.assertEqual(output_reads_info[2].split('-')[0], 'KBaseSets.ReadsSet')
 
     ### TEST 4: run Cutadapt against paired end reads set
     #
@@ -582,14 +562,14 @@ class kb_cutadaptTest(unittest.TestCase):
     # @unittest.skip("skipped test_basic_options_PE_ReadsSet")
     def test_basic_options_PE_ReadsSet(self):
 
-        print ("\n\nRUNNING: test_basic_options_PE_ReadsSet()")
-        print ("=========================================\n\n")
+        print("\n\nRUNNING: test_basic_options_PE_ReadsSet()")
+        print("=========================================\n\n")
 
-        input_libs = ['cutadapt_1','cutadapt_2']
+        input_libs = ['cutadapt_1', 'cutadapt_2']
         output_name = 'trim5p.PERS'
 
         pe_lib_set_info = self.getPairedEndLib_SetInfo(input_libs)
-        pe_lib_set_ref = str(pe_lib_set_info[6])+'/'+str(pe_lib_set_info[0])
+        pe_lib_set_ref = str(pe_lib_set_info[6]) + '/' + str(pe_lib_set_info[0])
 
         p4 = {
             'input_reads': pe_lib_set_ref,
@@ -609,12 +589,12 @@ class kb_cutadaptTest(unittest.TestCase):
 
         # check the output
         paired_output_name = output_name
-        info_list = self.wsClient.get_object_info([{'ref':pe_lib_set_info[7] + '/' + paired_output_name}], 1)
-        self.assertEqual(len(info_list),1)
+        info_list = self.wsClient.get_object_info(
+            [{'ref': pe_lib_set_info[7] + '/' + paired_output_name}], 1)
+        self.assertEqual(len(info_list), 1)
         output_reads_info = info_list[0]
-        self.assertEqual(output_reads_info[1],paired_output_name)
-        self.assertEqual(output_reads_info[2].split('-')[0],'KBaseSets.ReadsSet')
-
+        self.assertEqual(output_reads_info[1], paired_output_name)
+        self.assertEqual(output_reads_info[2].split('-')[0], 'KBaseSets.ReadsSet')
 
     ### TEST 5: run Cutadapt against just one paired end library with 3 prime adapter (anchored)
     #
@@ -622,14 +602,14 @@ class kb_cutadaptTest(unittest.TestCase):
     # @unittest.skip("skipped test_basic_options_PE_Lib_threeprime_anchored")
     def test_basic_options_PE_Lib_threeprime_anchored(self):
 
-        print ("\n\nRUNNING: test_basic_options_PE_Lib_threeprime_anchored()")
-        print ("========================================================\n\n")
+        print("\n\nRUNNING: test_basic_options_PE_Lib_threeprime_anchored()")
+        print("========================================================\n\n")
 
         input_libs = ['cutadapt_1']
         output_name = 'trim3p_anchored.PELib'
 
         pe_lib_info = self.getPairedEndLibInfo(input_libs[0])
-        pe_lib_ref = str(pe_lib_info[6])+'/'+str(pe_lib_info[0])
+        pe_lib_ref = str(pe_lib_info[6]) + '/' + str(pe_lib_info[0])
 
         p2 = {
             'input_reads': pe_lib_ref,
@@ -649,12 +629,12 @@ class kb_cutadaptTest(unittest.TestCase):
 
         # check the output
         paired_output_name = output_name
-        info_list = self.wsClient.get_object_info([{'ref':pe_lib_info[7] + '/' + paired_output_name}], 1)
-        self.assertEqual(len(info_list),1)
+        info_list = self.wsClient.get_object_info(
+            [{'ref': pe_lib_info[7] + '/' + paired_output_name}], 1)
+        self.assertEqual(len(info_list), 1)
         output_reads_info = info_list[0]
-        self.assertEqual(output_reads_info[1],paired_output_name)
-        self.assertEqual(output_reads_info[2].split('-')[0],'KBaseFile.PairedEndLibrary')
-
+        self.assertEqual(output_reads_info[1], paired_output_name)
+        self.assertEqual(output_reads_info[2].split('-')[0], 'KBaseFile.PairedEndLibrary')
 
     ### TEST 6: run Cutadapt against just one paired end library with 3 prime adapter (unanchored)
     #
@@ -662,14 +642,14 @@ class kb_cutadaptTest(unittest.TestCase):
     # @unittest.skip("skipped test_basic_options_PE_Lib_threeprime_UNanchored")
     def test_basic_options_PE_Lib_threeprime_UNanchored(self):
 
-        print ("\n\nRUNNING: test_basic_options_PE_Lib_threeprime_UNanchored()")
-        print ("==========================================================\n\n")
+        print("\n\nRUNNING: test_basic_options_PE_Lib_threeprime_UNanchored()")
+        print("==========================================================\n\n")
 
         input_libs = ['cutadapt_1']
         output_name = 'trim3p_unanchored.PELib'
 
         pe_lib_info = self.getPairedEndLibInfo(input_libs[0])
-        pe_lib_ref = str(pe_lib_info[6])+'/'+str(pe_lib_info[0])
+        pe_lib_ref = str(pe_lib_info[6]) + '/' + str(pe_lib_info[0])
 
         p2 = {
             'input_reads': pe_lib_ref,
@@ -689,12 +669,12 @@ class kb_cutadaptTest(unittest.TestCase):
 
         # check the output
         paired_output_name = output_name
-        info_list = self.wsClient.get_object_info([{'ref':pe_lib_info[7] + '/' + paired_output_name}], 1)
-        self.assertEqual(len(info_list),1)
+        info_list = self.wsClient.get_object_info(
+            [{'ref': pe_lib_info[7] + '/' + paired_output_name}], 1)
+        self.assertEqual(len(info_list), 1)
         output_reads_info = info_list[0]
-        self.assertEqual(output_reads_info[1],paired_output_name)
-        self.assertEqual(output_reads_info[2].split('-')[0],'KBaseFile.PairedEndLibrary')
-
+        self.assertEqual(output_reads_info[1], paired_output_name)
+        self.assertEqual(output_reads_info[2].split('-')[0], 'KBaseFile.PairedEndLibrary')
 
     ### TEST 7: run Cutadapt against just one paired end library with 5 prime unanchored
     #
@@ -702,14 +682,14 @@ class kb_cutadaptTest(unittest.TestCase):
     # @unittest.skip("skipped test_basic_options_PE_Lib_fiveprime_UNanchored")
     def test_basic_options_PE_Lib_fiveprime_UNanchored(self):
 
-        print ("\n\nRUNNING: test_basic_options_PE_Lib_fiveprime_UNanchored()")
-        print ("=========================================================\n\n")
+        print("\n\nRUNNING: test_basic_options_PE_Lib_fiveprime_UNanchored()")
+        print("=========================================================\n\n")
 
         input_libs = ['cutadapt_1']
         output_name = 'trim5p.PELib'
 
         pe_lib_info = self.getPairedEndLibInfo(input_libs[0])
-        pe_lib_ref = str(pe_lib_info[6])+'/'+str(pe_lib_info[0])
+        pe_lib_ref = str(pe_lib_info[6]) + '/' + str(pe_lib_info[0])
 
         p2 = {
             'input_reads': pe_lib_ref,
@@ -729,13 +709,12 @@ class kb_cutadaptTest(unittest.TestCase):
 
         # check the output
         paired_output_name = output_name
-        info_list = self.wsClient.get_object_info([{'ref':pe_lib_info[7] + '/' + paired_output_name}], 1)
-        self.assertEqual(len(info_list),1)
+        info_list = self.wsClient.get_object_info(
+            [{'ref': pe_lib_info[7] + '/' + paired_output_name}], 1)
+        self.assertEqual(len(info_list), 1)
         output_reads_info = info_list[0]
-        self.assertEqual(output_reads_info[1],paired_output_name)
-        self.assertEqual(output_reads_info[2].split('-')[0],'KBaseFile.PairedEndLibrary')
-
-
+        self.assertEqual(output_reads_info[1], paired_output_name)
+        self.assertEqual(output_reads_info[2].split('-')[0], 'KBaseFile.PairedEndLibrary')
 
     ### TEST 8: run Cutadapt against just one paired end library with discard_untrimmed
     #
@@ -743,14 +722,14 @@ class kb_cutadaptTest(unittest.TestCase):
     # @unittest.skip("skipped test_discard_untrimmed_option_PE_Lib")
     def test_discard_untrimmed_option_PE_Lib(self):
 
-        print ("\n\nRUNNING: test_discard_untrimmed_option_PE_Lib()")
-        print ("===============================================\n\n")
+        print("\n\nRUNNING: test_discard_untrimmed_option_PE_Lib()")
+        print("===============================================\n\n")
 
         input_libs = ['cutadapt_1']
         output_name = 'trim5p.PELib'
 
         pe_lib_info = self.getPairedEndLibInfo(input_libs[0])
-        pe_lib_ref = str(pe_lib_info[6])+'/'+str(pe_lib_info[0])
+        pe_lib_ref = str(pe_lib_info[6]) + '/' + str(pe_lib_info[0])
 
         p2 = {
             'input_reads': pe_lib_ref,
@@ -770,9 +749,9 @@ class kb_cutadaptTest(unittest.TestCase):
 
         # check the output
         paired_output_name = output_name
-        info_list = self.wsClient.get_object_info([{'ref':pe_lib_info[7] + '/' + paired_output_name}], 1)
-        self.assertEqual(len(info_list),1)
+        info_list = self.wsClient.get_object_info(
+            [{'ref': pe_lib_info[7] + '/' + paired_output_name}], 1)
+        self.assertEqual(len(info_list), 1)
         output_reads_info = info_list[0]
-        self.assertEqual(output_reads_info[1],paired_output_name)
-        self.assertEqual(output_reads_info[2].split('-')[0],'KBaseFile.PairedEndLibrary')
-
+        self.assertEqual(output_reads_info[1], paired_output_name)
+        self.assertEqual(output_reads_info[2].split('-')[0], 'KBaseFile.PairedEndLibrary')

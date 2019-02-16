@@ -1,3 +1,7 @@
+### Verson 1.1.0
+__Changes__
+- Update to Python 3
+
 ### Verson 1.0.7
 __Changes__
 - fix to build from sdkbase2 image

@@ -1,8 +1,8 @@
-FROM kbase/kbase:sdkbase2.latest
+FROM kbase/sdkbase2:python
 MAINTAINER KBase Developer
 
 # Here we install a python coverage tool
-RUN pip install coverage
+RUN pip install --upgrade pip
 
 # install cutadapt
 RUN pip install cutadapt==1.18
